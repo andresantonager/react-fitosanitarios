@@ -1,0 +1,16 @@
+{
+  "short_name": "Fitosanitarios WebApp",
+  "name": "Fitosanitarios WebApp",
+  "icons": [
+    {
+      "src": "planta.png",
+      "type": "image/png",
+      "sizes": "512x512 192x192 64x64 32x32 24x24 16x16"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#7DC921",
+  "background_color": "#7DC921",
+  "lang": "es"
+}
