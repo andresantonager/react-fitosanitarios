@@ -1,0 +1,104 @@
+.rcw-conversation-container  {
+    max-width: 100% !important;
+}
+
+.rcw-launcher, .rcw-header, .rcw-close-button {
+    background-color: var(--primary-color) !important;
+}
+
+.rcw-conversation-container .rcw-header {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+}
+
+.rcw-picker-btn {
+    display: none !important;
+}
+
+.rcw-sender{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.rcw-send-icon {
+    filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg);
+}
+
+.rcw-input {
+    font-size: 18px;
+    max-height: 50px;
+}
+
+p{
+    font-size: 18px;
+}
+
+span{
+    font-size: 18px;
+}
+
+.rcw-new-message {
+    padding: 15px 5px;
+}
+
+.rcw-response .rcw-message-text {
+    max-width: 80%;
+    background-color: #b3e0ff;
+}
+
+.rcw-client {
+    display: flex;
+    flex-direction: column;
+    margin-left: auto;
+    align-items: flex-end;
+    max-width: 80%;
+}
+
+.rcw-client .rcw-message-text {
+    background-color: #73c1ff;
+    max-width: none;
+}
+
+h1, h2, h3, h4{
+    margin: 0px;
+    padding: 0px;
+}
+
+ul{
+    margin: 0px;
+    padding-left: 30px;
+}
+
+li p {
+    margin-top: -22px !important;
+    margin-bottom: -22px !important;
+}
+
+.rcw-widget-container {
+    max-width: 530px !important;
+}
+
+/* HTML: <div class="loader"></div> */
+.loading {
+    width: 50px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    margin-top: 160px;
+    background: 
+      radial-gradient(farthest-side,#ffa516 94%,#0000) top/8px 8px no-repeat,
+      conic-gradient(#0000 30%,#ffa516);
+    -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+    animation: l13 1s infinite linear;
+  }
+  @keyframes l13{ 
+    100%{transform: rotate(1turn)}
+  }
+
+.p-autocomplete-items{
+    padding-left: 0;
+}
+
+.p-toast {
+    width: 90%;
+}

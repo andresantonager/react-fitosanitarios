@@ -98,7 +98,7 @@ export default function Pdf() {
                 }}
                 onClick={() => {
                   const link = document.createElement('a');
-                  link.href = `https://ager-agro.es/API/pdfs_fitos/${numRegistro}.pdf`;
+                  link.href = `https://fitos.es/pdfs/${numRegistro}.pdf`;
                   link.download = `${numRegistro}.pdf`;
                   link.click();
                 }}
@@ -118,7 +118,7 @@ export default function Pdf() {
   return (
     <div className='pdf-container' style={{ width: '100%', height: '100vh', overflow: 'auto' }}>
       <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-        <Viewer fileUrl={`https://ager-agro.es/API/pdfs_fitos/${numRegistro}.pdf`} plugins={[defaultLayoutPluginInstance]} defaultScale={1} />
+        <Viewer fileUrl={`https://fitos.es/pdfs/${numRegistro}.pdf`} plugins={[defaultLayoutPluginInstance]} defaultScale={1} />
       </Worker>
     </div>
   );
