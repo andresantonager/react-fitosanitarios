@@ -26,16 +26,16 @@
 }
 
 .rcw-input {
-    font-size: 18px;
+    font-size: 16px;
     max-height: 50px;
 }
 
 p{
-    font-size: 18px;
+    font-size: 16px;
 }
 
 span{
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .rcw-new-message {
@@ -79,6 +79,12 @@ li p {
     max-width: 530px !important;
 }
 
+@media screen and (max-width: 800px) {
+    .rcw-widget-container {
+        height: 100%;
+    }
+}
+
 /* HTML: <div class="loader"></div> */
 .loading {
     width: 50px;
@@ -102,3 +108,32 @@ li p {
 .p-toast {
     width: 90%;
 }
+
+.rcw-response {
+    width: 100%;
+}
+
+.loading-container {
+    width: 65px;
+    padding: 15px;
+    margin-left: 10px;
+    background-color: #73c1ff;
+    border-radius: 10px;
+}
+
+.loading-chat {
+    width: 35px;
+    aspect-ratio: 4;
+    --_g: no-repeat radial-gradient(circle closest-side,#000 90%,#0000);
+    background: 
+      var(--_g) 0%   50%,
+      var(--_g) 50%  50%,
+      var(--_g) 100% 50%;
+    background-size: calc(100%/3) 100%;
+    animation: l7 1s infinite linear;
+  }
+  @keyframes l7 {
+      33%{background-size:calc(100%/3) 0%  ,calc(100%/3) 100%,calc(100%/3) 100%}
+      50%{background-size:calc(100%/3) 100%,calc(100%/3) 0%  ,calc(100%/3) 100%}
+      66%{background-size:calc(100%/3) 100%,calc(100%/3) 100%,calc(100%/3) 0%  }
+  }

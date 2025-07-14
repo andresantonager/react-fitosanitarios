@@ -1,0 +1,12 @@
+.pdf-container{
+  width: 100%;
+  height: 900px; /* Puedes aumentar esta altura si es necesario */
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rpv-default-layout__toolbar{
+  justify-content: center;
+}

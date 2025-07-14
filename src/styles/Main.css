@@ -1,0 +1,334 @@
+#root {
+  width: 100%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #A8CFF5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  margin: 0;
+}
+
+.header-div {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: white;
+  z-index: 10;
+  border-bottom: solid 2px black;
+  height: 80px; /* Altura fija del header */
+}
+
+.header-logo {
+  width: 20%;
+  height: auto;
+  margin-right: 10px;
+  max-width: 120px;
+}
+
+.body-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 90px;
+  width: 100%;
+}
+
+.form-div {
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+h1 {
+  font-size: 2.5em;
+  color: #00796b;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+form > div {
+  width: 100%;
+  margin-bottom: 5px;
+  position: relative;
+}
+
+label {
+  font-size: 1.2em;
+  margin: 10px 0 5px;
+  color: #555;
+  display: block;
+}
+
+input {
+  padding: 10px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1em;
+}
+
+input:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* <datalist> and <option> styling */
+datalist {
+  position: absolute;
+  max-height: 20em;
+  border: 0 none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+datalist option {
+  font-size: 0.8em;
+  padding: 0.3em 1em;
+  background-color: #ccc;
+  cursor: pointer;
+}
+
+datalist option:hover, datalist option:focus {
+  color: #fff;
+  background-color: #036;
+  outline: 0 none;
+}
+
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.suggestion {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.suggestion:hover {
+  background-color: #f0f0f0;
+}
+
+.custom-dropdown {
+  border: 1px solid #ccc;
+  max-height: 150px;
+  overflow-y: auto;
+  position: absolute;
+  background-color: white;
+  z-index: 1000;
+  width: 100%;
+}
+
+.custom-dropdown div {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.custom-dropdown div:hover {
+  background-color: #f0f0f0;
+}
+
+.label-form {
+  display: flex;
+  color: black;
+}
+
+.button-div {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.button {
+  font-size: 1.2em;
+  color: black;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+button.disabled {
+  color: gray;
+  cursor: not-allowed;
+}
+
+.loader {
+  position: relative;
+  margin: 0 auto;
+  width: 100px;
+  &:before {
+    content: '';
+    display: block;
+    padding-top: 100%;
+  }
+}
+
+.circular {
+  animation: rotate 2s linear infinite;
+  height: 100%;
+  transform-origin: center center;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.path {
+  stroke-dasharray: 1, 200;
+  stroke-dashoffset: 0;
+  animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+  stroke-linecap: round;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35px;
+  }
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124px;
+  }
+}
+
+@keyframes color {
+  100%,
+  0% {
+    stroke: #d62d20;
+  }
+  40% {
+    stroke: #0057e7;
+  }
+  66% {
+    stroke: #008744;
+  }
+  80%,
+  90% {
+    stroke: #ffa700;
+  }
+}
+
+#error-div {
+  color: red;
+  text-align: center;
+  padding: 20px;
+  font-weight: bold;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+#offline-warning {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background-color: red;
+  color: white;
+  text-align: center;
+  padding: 10px;
+}
+
+.chatbot-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.chatbot {
+  width: 70px;
+  height: 70px;
+  cursor: pointer;
+}
+
+.readonly-input {
+  background-color: #bbbbbb;
+}
+
+
+@media (max-height: 850px) {
+  .body-div {
+    padding-top: 160px;
+  }
+}
+
+@media (max-height: 800px) {
+  .body-div {
+    padding-top: 190px;
+  }
+}
+
+@media (max-height: 770px) {
+  .body-div {
+    padding-top: 210px;
+  }
+}
+
+@media (max-height: 750px) {
+  .body-div {
+    padding-top: 230px;
+  }
+}
+
+@media (max-height: 730px) {
+  .body-div {
+    padding-top: 240px;
+  }
+}
+
+@media (max-height: 700px) {
+  .body-div {
+    padding-top: 270px;
+  }
+}
+
+@media screen and (max-width: 450px) {
+  #main-title {
+    font-size: 32px;
+    margin-bottom: 0;
+    margin-top: 0;
+  }
+}

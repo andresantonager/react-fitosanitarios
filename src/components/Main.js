@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from 'primereact/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import 'primeflex/primeflex.css';
@@ -11,6 +11,7 @@ import { AutoComplete } from 'primereact/autocomplete';
 import { Widget, addResponseMessage, deleteMessages } from 'react-chat-widget';
 import 'react-chat-widget/lib/styles.css';
 import { Toast } from 'primereact/toast';
+import { ModalInstall } from './ModalInstall';
         
 const Main = () => {
   const navigate = useNavigate();
@@ -35,6 +36,11 @@ const Main = () => {
   const [messageCount, setMessageCount] = useState(location.state?.messageCount || 0);
   const [chatHistory, setChatHistory] = useState([]);
   const toast = useRef(null);
+  const autoCompleteNumRegistroRef = useRef(null);
+  const autoCompleteNombreRef = useRef(null);
+  const autoCompleteFormuladoRef = useRef(null);
+  const autoCompleteTitularRef = useRef(null);
+  const [threadId, setThreadId] = useState(null);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -45,15 +51,17 @@ const Main = () => {
     const fetchData = async () => {
       try {
         document.querySelector('.body-div').style.paddingTop = '0';
-        const cache = await caches.open('fitosanitarios-cache');
+        const cache = await caches.open('fitosanitarios-cache-v2.0');
         const cachedResponse = await cache.match('fitosanitarios.csv');
         
         if (cachedResponse && !isRefreshing) {
+          console.log("Datos cargados desde el caché");
           const csv = await cachedResponse.text();
           const parsedData = Papa.parse(csv, { header: true }).data;
           setData(parsedData);
           updateOptions(parsedData, nombre, null, null, formulado, link, numRegistro, titular);
         } else {
+          console.log("Datos cargados desde el servidor");
           const response = await fetch('https://fitos.es/fitos.csv', { cache: 'no-store' });
           const reader = response.body.getReader();
           let decoder = new TextDecoder('utf-8');
@@ -166,8 +174,29 @@ const Main = () => {
   };
 
   const searchNumRegistro = (event) => {
-    const query = event.query.toLowerCase();
+    const query = (event.query || "").toLowerCase();
     setFilteredNumRegistros(numRegistros.filter((numRegistro) => numRegistro.toLowerCase().includes(query)));
+  };
+
+  const handleOnFocus = (autoComplete, isNumRegistro=false, isNombre=false, isFormulado=false, isTitular=false) => {
+    // Invocamos la función de búsqueda con query vacío para cargar todas las sugerencias
+    if(isNumRegistro){
+      searchNumRegistro({ query: '' });
+    }
+    if(isNombre){
+      searchNombre({ query: '' });
+    }
+    if(isFormulado){
+      searchFormulado({ query: '' });
+    }
+    if(isTitular){
+      searchTitular({ query: '' });
+    }
+
+    // Si la referencia está asignada y contiene el método show, lo llamamos para mostrar el panel
+    if (autoComplete.current && autoComplete.current.show) {
+      autoComplete.current.show();
+    }
   };
 
   const searchTitular = (event) => {
@@ -246,9 +275,19 @@ const Main = () => {
 
   const handleNewUserMessage = async (question) => {
     try {
-      const processingMessage = 'Estamos procesando su pregunta, por favor espere...';
-      addResponseMessage(processingMessage);
-
+      // Añadir un div de loading a la clase rcw-messages-container
+      const messagesContainer = document.querySelector('.rcw-messages-container');
+      let loadingDiv;
+      if (messagesContainer) {
+        loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading-container';
+        
+        const loadingChatDiv = document.createElement('div');
+        loadingChatDiv.className = 'loading-chat';
+        
+        loadingDiv.appendChild(loadingChatDiv);
+        messagesContainer.appendChild(loadingDiv);
+      }
       // Cerrar el teclado
       const inputElement = document.querySelector('.rcw-send');
       if (inputElement) {
@@ -256,34 +295,136 @@ const Main = () => {
         inputElement.blur();
       }
 
-      const url_server = "https://fitos.es";
-      const response = await fetch(url_server + '/api/ask', {
+      const response = await fetch('https://fitos.es/api/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: question, history: chatHistory }),
+        body: JSON.stringify({ question: question, history: chatHistory, thread_id: threadId }),
         cache: 'no-store'
       });
 
       if (!response.ok) {
         throw new Error('Error en la respuesta de la API');
+      } else if (loadingDiv) {
+        messagesContainer.removeChild(loadingDiv);
       }
 
-      const data = await response.json();
+      setThreadId(response.headers.get('X-Thread-Id'));
 
-      let botResponse = data.response;
-      deleteMessages(1);
-      addResponseMessage(botResponse);
-      setChatHistory(data.history);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let botResponse = '';
+      let completeResponse = '';
+      let scrollCount = 0;
+
+      // Añadir un mensaje inicial vacío
+      addResponseMessage('');
+
+      // Esperar un breve momento para asegurarse de que el mensaje se ha añadido
+      setTimeout(() => {
+        // Obtener el último mensaje añadido después de añadir el mensaje vacío
+        const messages = document.querySelectorAll('.rcw-message-text');
+        const lastMessageElement = messages[messages.length - 1];
+
+        // Leer el stream de datos
+        (async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            completeResponse += chunk;
+
+            // Buscar el marcador de inicio del historial
+            const historyMarkerIndex = completeResponse.indexOf("\nhistorial: ");
+            if (historyMarkerIndex !== -1) {
+              // Separar la respuesta del historial
+              botResponse = completeResponse.substring(0, historyMarkerIndex).trim();
+              const historyJson = completeResponse.substring(historyMarkerIndex + 12).trim();
+
+              // Abrir las URLs encontradas en la respuesta, de momento no se hace para eso esta la pantalla previa
+              // openUrlAutomatically();
+
+              // Actualizar el historial
+              setChatHistory(JSON.parse(historyJson));
+              // Salir del bucle ya que hemos procesado todo
+              break;
+            }
+
+            // Transformar texto en negrita y encabezados de nivel 3
+            const formattedResponse = completeResponse
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/### (.*?)\n/g, '<h3>$1</h3>\n')
+                .replace(/"([^"]+)"/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<strong>$1</strong>')
+                .replace(/#### (.*?)\n/g, '<h4>$1</h4>\n')
+                .replace(/\[Descargar.*?\]\(sandbox:\/mnt\/data\/([^\/\)]+)\)/g, '<a href="#" style="color: blue; text-decoration: underline;" onclick="downloadFile(\'$1\')">$1</a>')
+                .replace(/\/mnt\/data\/([^\/\s\)]+)/g, '<a href="#" style="color: blue; text-decoration: underline;" onclick="downloadFile(\'$1\')">$1</a>')
+                .replace(/\n/g, '<br>');
+
+            // Actualizar el contenido del último mensaje
+            if (lastMessageElement) {
+              lastMessageElement.innerHTML = formattedResponse;
+              // Desplazar hacia abajo cada vez que se actualiza el mensaje, hasta un máximo de 100 veces
+              if (scrollCount < 100) {
+                  const messagesContainer = document.querySelector('.rcw-messages-container');
+                  if (messagesContainer) {
+                      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                      scrollCount++; // Incrementar el contador
+                  }
+              }
+            }
+          }
+        })();
+      }, 100); // Ajusta el tiempo de espera según sea necesario
+
       openUrlAutomatically(botResponse);
     } catch (error) {
       console.error('Error al obtener respuesta de ChatGPT:', error);
     }
   };
 
+  // 1) Definimos la función dentro del componente para que pueda
+  //    usar `toast.current` y demás refs de React.
+  const downloadFile = useCallback(async (filename) => {
+    try {
+      const response = await fetch('https://fitos.es/api/get_file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error al descargar el archivo', error);
+      toast.current.show({
+        severity: 'error',
+        summary: 'Descarga fallida',
+        detail: 'No se pudo descargar el archivo',
+        life: 3000
+      });
+    }
+  }, [toast]);
+
+  // 2) Exponemos la función en el ámbito global para que 
+  //    los onclick inline la puedan invocar.
+  useEffect(() => {
+    window.downloadFile = downloadFile;
+  }, [downloadFile]);
+
   return (
-    <div className="body-div flex flex-column align-items-center">
+      <><ModalInstall /><div className="body-div flex flex-column align-items-center">
       <Toast ref={toast} />
       <div className="header-div flex align-items-center justify-content-center w-full pt-2 pb-2 border-bottom-2 border-black-alpha-90">
         <img src={logo_nematool} alt="Logo" className="mr-1" style={{ width: '150px', height: 'auto' }} />
@@ -293,82 +434,84 @@ const Main = () => {
         {loading ? (
           <div className="loading"></div>
         ) : (
-        <div className='w-full'>
-          <form className="flex flex-column align-items-center mt-5 mb-5 w-full">
-            <div className="flex flex-column w-full">
-              <label htmlFor="numRegistro" className="text-xl font-semibold">Número de Registro:</label>
-              <AutoComplete 
-                className='mt-2 mb-3 w-full'
-                id="numRegistro" 
-                value={numRegistro} 
-                suggestions={filteredNumRegistros} 
-                completeMethod={searchNumRegistro} 
-                onChange={(e) => setNumRegistro(e.value)} 
-                onSelect={handleNumRegistroSelect}
-                inputClassName="w-full"
-              />
+          <div className='w-full'>
+            <form className="flex flex-column align-items-center mt-5 mb-5 w-full">
+              <div className="flex flex-column w-full">
+                <label htmlFor="numRegistro" className="text-xl font-semibold">Número de Registro:</label>
+                <AutoComplete
+                  ref={autoCompleteNumRegistroRef}
+                  className='mt-2 mb-3 w-full'
+                  id="numRegistro"
+                  value={numRegistro}
+                  suggestions={filteredNumRegistros}
+                  completeMethod={searchNumRegistro}
+                  minLength={0}
+                  onChange={(e) => setNumRegistro(e.value)}
+                  onFocus={() => handleOnFocus(autoCompleteNumRegistroRef, true, false, false, false)}
+                  onSelect={handleNumRegistroSelect}
+                  inputClassName="w-full" />
+              </div>
+              <div className="flex flex-column w-full">
+                <label htmlFor="nombre" className="text-xl font-semibold">Nombre Comercial:</label>
+                <AutoComplete
+                  ref={autoCompleteNombreRef}
+                  className='mt-2 mb-3 w-full'
+                  id="nombre"
+                  value={nombre}
+                  suggestions={filteredNombres}
+                  completeMethod={searchNombre}
+                  onChange={(e) => setNombre(e.value)}
+                  onFocus={() => handleOnFocus(autoCompleteNombreRef, false, true, false, false)}
+                  onSelect={handleNombreSelect}
+                  inputClassName="w-full" />
+              </div>
+              <div className="flex flex-column w-full">
+                <label htmlFor="formulado" className="text-xl font-semibold">Composición:</label>
+                <AutoComplete
+                  ref={autoCompleteFormuladoRef}
+                  className='mt-2 mb-3 w-full'
+                  id="formulado"
+                  value={formulado}
+                  suggestions={filteredFormulados}
+                  completeMethod={searchFormulado}
+                  onChange={(e) => setFormulado(e.value)}
+                  onFocus={() => handleOnFocus(autoCompleteFormuladoRef, false, false, true, false)}
+                  onSelect={handleFormuladoSelect}
+                  inputClassName="w-full" />
+              </div>
+              <div className="flex flex-column w-full">
+                <label htmlFor="titular" className="text-xl font-semibold">Titular:</label>
+                <AutoComplete
+                  ref={autoCompleteTitularRef}
+                  className='mt-2 w-full'
+                  id="titular"
+                  value={titular}
+                  suggestions={filteredTitulares}
+                  completeMethod={searchTitular}
+                  onChange={(e) => setTitular(e.value)}
+                  onFocus={() => handleOnFocus(autoCompleteTitularRef, false, false, false, true)}
+                  onSelect={handleTitularSelect}
+                  inputClassName="w-full" />
+              </div>
+            </form>
+            <div className='button-div flex justify-content-around mb-5'>
+              <Button
+                label="Ver PDF"
+                onClick={handlePdfButtonClick}
+                className={`p-button ${links.length > 1 ? 'p-disabled' : ''}`} />
+              <Button
+                label="Limpiar"
+                onClick={handleClearButtonClick}
+                className="p-button" />
+              <Button
+                icon="pi pi-refresh"
+                onClick={handleRefreshButtonClick}
+                className="p-button-icon-only" />
             </div>
-            <div className="flex flex-column w-full">
-              <label htmlFor="nombre" className="text-xl font-semibold">Nombre Comercial:</label>
-              <AutoComplete 
-                className='mt-2 mb-3 w-full'
-                id="nombre" 
-                value={nombre} 
-                suggestions={filteredNombres} 
-                completeMethod={searchNombre} 
-                onChange={(e) => setNombre(e.value)} 
-                onSelect={handleNombreSelect}
-                inputClassName="w-full"
-              />
-            </div>
-            <div className="flex flex-column w-full">
-              <label htmlFor="formulado" className="text-xl font-semibold">Composición:</label>
-              <AutoComplete 
-                className='mt-2 mb-3 w-full'
-                id="formulado" 
-                value={formulado} 
-                suggestions={filteredFormulados} 
-                completeMethod={searchFormulado} 
-                onChange={(e) => setFormulado(e.value)} 
-                onSelect={handleFormuladoSelect}
-                inputClassName="w-full"
-              />
-            </div>
-            <div className="flex flex-column w-full">
-              <label htmlFor="titular" className="text-xl font-semibold">Titular:</label>
-              <AutoComplete 
-                className='mt-2 w-full'
-                id="titular" 
-                value={titular} 
-                suggestions={filteredTitulares} 
-                completeMethod={searchTitular} 
-                onChange={(e) => setTitular(e.value)} 
-                onSelect={handleTitularSelect}
-                inputClassName="w-full"
-              />
-            </div>
-          </form>
-          <div className='button-div flex justify-content-around mb-5'>
-            <Button 
-              label="Ver PDF" 
-              onClick={handlePdfButtonClick} 
-              className={`p-button ${links.length > 1 ? 'p-disabled' : ''}`}
-            />
-            <Button 
-              label="Limpiar" 
-              onClick={handleClearButtonClick} 
-              className="p-button"
-            />
-            <Button 
-              icon="pi pi-refresh" 
-              onClick={handleRefreshButtonClick} 
-              className="p-button-icon-only"
-            />
           </div>
-        </div>
         )}
       </div>
-      
+
       <Widget
         handleNewUserMessage={handleNewUserMessage}
         subtitle={null}
@@ -376,9 +519,21 @@ const Main = () => {
         title={"Chat"}
         showTimeStamp={false}
         senderPlaceHolder={"Escribe tu mensaje..."}
-        style={{ maxWidth: '100%', margin: '0 auto' }}
-      />
+        style={{ maxWidth: '100%', margin: '0 auto' }} />
     </div>
+    <div style={{
+        position: "fixed",
+        bottom: "35px",
+        left: "10px",
+        fontSize: "0.9rem",
+        color: "black",
+        backgroundColor: "rgba(255,255,255,0.8)",
+        padding: "4px 8px",
+        borderRadius: "4px"
+      }}>
+      Versión 2.0
+    </div>
+    </>
   );
 };
 
